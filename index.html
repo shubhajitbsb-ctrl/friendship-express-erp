@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GatiTrack ERP v5.0 - Friendship Express Pvt Ltd</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                            800: '#0c4a6e',
+                            900: '#0f172a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase JS SDK (v10 Compat for browser runtimes) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        @media print {
+            body * { visibility: hidden; }
+            .printable-area, .printable-area * { visibility: visible; }
+            .printable-area { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="h-full text-slate-800 flex flex-col overflow-hidden">
+
+    <!-- TOP HEADER / BRAND & USER ROLE SWITCHER -->
+    <header class="bg-slate-900 text-white border-b border-slate-800 h-16 flex items-center justify-between px-4 sm:px-6 z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <button id="mobileMenuBtn" class="lg:hidden text-slate-400 hover:text-white">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-amber-500 to-amber-400 text-slate-950 p-2 rounded-xl font-black text-xl flex items-center justify-center h-10 w-10 shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid fa-truck-fast"></i>
+                </div>
+                <div>
+                    <span class="font-extrabold text-base tracking-tight text-white flex items-center gap-2">
+                        Friendship Express Pvt Ltd
+                        <span class="bg-amber-500/20 text-amber-400 text-[10px] px-2 py-0.5 rounded font-mono border border-amber-500/30">ERP v5.0</span>
+                    </span>
+                    <p class="text-[11px] text-slate-400 -mt-0.5 hidden sm:block">Customer Suite, Tariff Master, Fleet, Accounting & HR</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Search & Multi-User Login Switcher -->
+        <div class="flex items-center gap-3">
+            <button onclick="openSearchModal()" class="hidden md:flex items-center gap-2 bg-slate-800 hover:bg-slate-700/80 text-slate-300 text-xs px-3 py-2 rounded-lg border border-slate-700 transition">
+                <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                <span>Search trips, customers, tariffs, trucks...</span>
+                <kbd class="ml-3 bg-slate-900 text-slate-400 px-1.5 py-0.5 rounded text-[10px] font-mono border border-slate-700">Ctrl K</kbd>
+            </button>
+
+            <!-- Cloud Database Connection Indicator -->
+            <div id="cloudStatusBadge" class="hidden sm:flex items-center gap-1.5 bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 text-[11px] font-medium px-2.5 py-1 rounded-lg">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span id="cloudStatusText">Cloud Realtime Sync Active</span>
+            </div>
+
+            <!-- ROLE / USER SWITCHER -->
+            <div class="bg-slate-800 p-1 rounded-xl border border-slate-700/80 flex items-center gap-2">
+                <div class="hidden xl:block text-right pl-2">
+                    <p id="activeUserName" class="text-xs font-bold text-slate-200">Vikramaditya Sharma</p>
+                    <p id="activeUserRole" class="text-[10px] text-amber-400 font-semibold">Managing Director (Admin)</p>
+                </div>
+                <select id="userSwitchSelect" onchange="switchUserRole(this.value)" class="bg-slate-900 text-slate-200 text-xs rounded-lg px-2.5 py-1.5 font-medium border border-slate-700 focus:outline-none focus:ring-1 focus:ring-amber-500">
+                    <option value="EMP-101">Login: Vikramaditya (Admin)</option>
+                    <option value="EMP-102">Login: Rajesh Patil (Dispatch Supv)</option>
+                    <option value="EMP-103">Login: Ananya Deshmukh (Chief Accountant)</option>
+                    <option value="EMP-104">Login: Priya Nair (HR Manager)</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- SIDEBAR NAVIGATION -->
+        <aside id="sidebar" class="fixed lg:relative inset-y-0 left-0 w-64 bg-slate-900 border-r border-slate-800 flex flex-col z-10 -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out shrink-0 pt-16 lg:pt-0">
+            <div class="p-4 border-b border-slate-800/80">
+                <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Company GSTIN</div>
+                <div class="text-xs font-mono font-bold text-slate-200 mt-0.5">27AABCF9012R1ZX</div>
+                <div class="mt-2 flex items-center gap-2 text-xs bg-slate-800/60 p-2 rounded-lg text-slate-300">
+                    <i class="fa-solid fa-location-dot text-amber-500"></i>
+                    <span class="font-medium">HQ: Mumbai (West Central)</span>
+                </div>
+            </div>
+
+            <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar text-sm font-medium">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn active w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-chart-pie w-5 text-amber-500"></i>
+                        <span>Executive Dashboard</span>
+                    </div>
+                </button>
+
+                <!-- CUSTOMER SUITE & TARIFFS -->
+                <button onclick="switchTab('customers')" id="nav-customers" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-handshake-angle w-5 text-amber-500"></i>
+                        <span>Customer & Tariff Suite</span>
+                    </div>
+                    <span id="badge-total-customers" class="bg-amber-500/20 text-amber-400 font-mono text-xs px-2 py-0.5 rounded-full border border-amber-500/30">0</span>
+                </button>
+
+                <button onclick="switchTab('trips')" id="nav-trips" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-route w-5 text-amber-500"></i>
+                        <span>Trips & LR Notes</span>
+                    </div>
+                    <span id="badge-active-trips" class="bg-slate-800 text-amber-400 font-mono text-xs px-2 py-0.5 rounded-full border border-slate-700">0</span>
+                </button>
+
+                <button onclick="switchTab('fleet')" id="nav-fleet" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-truck-front w-5 text-amber-500"></i>
+                        <span>Fleet Management</span>
+                    </div>
+                    <span id="badge-total-fleet" class="text-slate-400 font-mono text-xs">0</span>
+                </button>
+
+                <!-- ACCOUNTING SUITE -->
+                <div class="pt-3 pb-1 px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Accounting & Finance</div>
+
+                <button onclick="switchTab('accounting')" id="nav-accounting" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-book-journal-whills w-5 text-amber-500"></i>
+                        <span>General Ledger & Vouchers</span>
+                    </div>
+                </button>
+
+                <button onclick="switchTab('invoices')" id="nav-invoices" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-file-invoice-dollar w-5 text-amber-500"></i>
+                        <span>GST Freight Billing</span>
+                    </div>
+                </button>
+
+                <button onclick="switchTab('fuel')" id="nav-fuel" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-gas-pump w-5 text-amber-500"></i>
+                        <span>Fuel & Expenses</span>
+                    </div>
+                </button>
+
+                <!-- HR & PAYROLL SUITE -->
+                <div class="pt-3 pb-1 px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Human Resources</div>
+
+                <button onclick="switchTab('hr')" id="nav-hr" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-users w-5 text-amber-500"></i>
+                        <span>Employee Directory</span>
+                    </div>
+                </button>
+
+                <button onclick="switchTab('payroll')" id="nav-payroll" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-money-check-dollar w-5 text-amber-500"></i>
+                        <span>Payroll & Payslips</span>
+                    </div>
+                </button>
+
+                <button onclick="switchTab('reports')" id="nav-reports" class="nav-btn w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-chart-line w-5 text-amber-500"></i>
+                        <span>P&L Profitability Analysis</span>
+                    </div>
+                </button>
+            </nav>
+
+            <div class="p-3 border-t border-slate-800 bg-slate-950/50">
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                    <span>Currency Standard</span>
+                    <span class="text-amber-400 font-bold font-mono">INR (₹)</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 overflow-y-auto custom-scrollbar bg-slate-100 p-4 sm:p-6">
+
+            <!-- DASHBOARD TAB -->
+            <section id="tab-dashboard" class="tab-content space-y-6">
+                <!-- Welcome Banner -->
+                <div class="bg-gradient-to-r from-slate-900 via-slate-800 to-amber-950 rounded-2xl p-6 text-white shadow-md relative overflow-hidden">
+                    <div class="relative z-10">
+                        <h2 class="text-2xl font-extrabold tracking-tight">Friendship Express Pvt Ltd Operations Portal</h2>
+                        <p class="text-xs text-slate-300 mt-1 max-w-xl">Interstate fleet dispatches, contractual freight tariffs, auto-rate lookup, financial ledgers, and employee payroll.</p>
+                    </div>
+                </div>
+
+                <!-- Top Summary Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Gross Revenue (FY 26-27)</p>
+                            <h3 id="dash-revenue" class="text-2xl font-black text-slate-900 mt-1">₹ 0</h3>
+                            <p class="text-xs text-emerald-600 mt-1 font-medium flex items-center gap-1">
+                                <i class="fa-solid fa-arrow-trend-up"></i> +18.4% YoY Growth
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-emerald-50 rounded-xl text-emerald-600 flex items-center justify-center text-xl font-bold border border-emerald-100">
+                            ₹
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Contractual Clients</p>
+                            <h3 id="dash-contract-clients" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+                            <p class="text-xs text-amber-600 mt-1 font-medium" id="dash-active-rates">0 Agreed Rate Cards</p>
+                        </div>
+                        <div class="w-12 h-12 bg-amber-50 rounded-xl text-amber-600 flex items-center justify-center text-xl font-bold border border-amber-100">
+                            <i class="fa-solid fa-handshake-angle"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Active Dispatches</p>
+                            <h3 id="dash-active-trips" class="text-2xl font-bold text-slate-900 mt-1">0</h3>
+                            <p class="text-xs text-slate-500 mt-1 font-medium">Interstate Highways</p>
+                        </div>
+                        <div class="w-12 h-12 bg-sky-50 rounded-xl text-sky-600 flex items-center justify-center text-xl font-bold border border-sky-100">
+                            <i class="fa-solid fa-truck-moving"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase text-slate-400 tracking-wider">Monthly Fuel & Tolls</p>
+                            <h3 id="dash-fuel-cost" class="text-2xl font-bold text-slate-900 mt-1">₹ 0</h3>
+                            <p class="text-xs text-slate-500 mt-1 font-medium">Avg Mileage: 3.85 Km/L</p>
+                        </div>
+                        <div class="w-12 h-12 bg-rose-50 rounded-xl text-rose-600 flex items-center justify-center text-xl font-bold border border-rose-100">
+                            <i class="fa-solid fa-gas-pump"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Financial & Fleet Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="font-bold text-slate-900">Freight Revenue vs Operating Costs</h3>
+                                <p class="text-xs text-slate-500">Monthly totals in Indian Rupees (INR)</p>
+                            </div>
+                            <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md font-medium">FY 2026-27</span>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="financialsChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-slate-900">Fleet Deployment Status</h3>
+                        </div>
+                        <div class="h-52 relative flex items-center justify-center">
+                            <canvas id="fleetStatusChart"></canvas>
+                        </div>
+                        <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-emerald-500"></span><span class="text-slate-600">Available</span></div>
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-sky-500"></span><span class="text-slate-600">In Transit</span></div>
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-amber-500"></span><span class="text-slate-600">Maintenance</span></div>
+                            <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-slate-400"></span><span class="text-slate-600">Yard Idle</span></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CUSTOMER & TARIFF SUITE TAB -->
+            <section id="tab-customers" class="tab-content hidden space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Customer Master & Freight Tariff Suite</h2>
+                        <p class="text-xs text-slate-500">Contractual SLAs, Spot/Adhoc freight cards by destination & vehicle type (Auto-fetched during trip creation).</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="openModal('customerModal')" class="role-acct bg-slate-900 hover:bg-slate-800 text-white font-medium px-3.5 py-2 rounded-lg text-xs flex items-center gap-2">
+                            <i class="fa-solid fa-building-user"></i> Add Customer Profile
+                        </button>
+                        <button onclick="openModal('rateModal')" class="role-dispatch bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-3.5 py-2 rounded-lg text-xs flex items-center gap-2 shadow-sm">
+                            <i class="fa-solid fa-circle-plus"></i> Add Tariff Rate Card
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Customer Directory Cards -->
+                <div class="space-y-3">
+                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <i class="fa-solid fa-address-book text-amber-500"></i> Corporate Client Master Directory
+                    </h3>
+                    <div id="customerMasterGrid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- JS Inject -->
+                    </div>
+                </div>
+
+                <!-- Tariff Matrix Table -->
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mt-6">
+                    <div class="p-4 border-b border-slate-100 flex flex-wrap justify-between items-center gap-3">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-sm">Freight Tariff Matrix (Contractual & Adhoc Rates)</h3>
+                            <p class="text-xs text-slate-500">Agreed vehicle rates automatically auto-fill into LR Note creation sheets.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <select id="tariffCustomerFilter" onchange="renderTariffMatrix()" class="text-xs bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium">
+                                <option value="ALL">All Clients</option>
+                            </select>
+                            <select id="tariffTypeFilter" onchange="renderTariffMatrix()" class="text-xs bg-slate-50 border border-slate-200 rounded-lg p-2 font-medium">
+                                <option value="ALL">All Rate Types</option>
+                                <option value="Contractual">Contractual Only</option>
+                                <option value="Adhoc / Spot">Adhoc / Spot Only</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3.5">Rate Card ID</th>
+                                    <th class="p-3.5">Customer / Client</th>
+                                    <th class="p-3.5">Rate Type</th>
+                                    <th class="p-3.5">Route (Origin ➔ Destination)</th>
+                                    <th class="p-3.5">Vehicle Type</th>
+                                    <th class="p-3.5">Agreed Freight (₹)</th>
+                                    <th class="p-3.5">Driver Advance (₹)</th>
+                                    <th class="p-3.5">Validity</th>
+                                    <th class="p-3.5 text-center">Quick Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tariffMatrixTableBody" class="divide-y divide-slate-100 text-slate-700">
+                                <!-- JS Inject -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TRIPS & CONSIGNMENTS TAB -->
+            <section id="tab-trips" class="tab-content hidden space-y-5">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Trip Dispatches & Lorry Receipts (LR)</h2>
+                        <p class="text-xs text-slate-500">Manage consignment notes, driver advances, freight charges, and route tracking.</p>
+                    </div>
+                    <button onclick="openModal('tripModal')" class="role-dispatch bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-circle-plus"></i> Issue New LR / Dispatch Trip
+                    </button>
+                </div>
+
+                <div class="bg-white p-3.5 rounded-xl border border-slate-200 flex flex-wrap gap-3 items-center justify-between">
+                    <div class="flex items-center gap-2 flex-1 min-w-[240px]">
+                        <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs ml-2"></i>
+                        <input type="text" id="tripSearch" oninput="renderTrips()" placeholder="Search by LR Number, Client, Route or Vehicle..." class="w-full text-xs bg-slate-50 border-0 focus:ring-0 p-1.5 rounded-md text-slate-800">
+                    </div>
+                    <select id="tripStatusFilter" onchange="renderTrips()" class="text-xs bg-slate-50 border border-slate-200 rounded-lg p-2 text-slate-700 font-medium">
+                        <option value="ALL">All Trip Statuses</option>
+                        <option value="In Transit">In Transit</option>
+                        <option value="Delivered">Delivered</option>
+                        <option value="Completed">Completed & Billed</option>
+                    </select>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3.5">LR / Trip ID</th>
+                                    <th class="p-3.5">Consignor Client</th>
+                                    <th class="p-3.5">Route</th>
+                                    <th class="p-3.5">Assigned Vehicle</th>
+                                    <th class="p-3.5">Freight Amount</th>
+                                    <th class="p-3.5">Driver Advance</th>
+                                    <th class="p-3.5">Status</th>
+                                    <th class="p-3.5 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tripsTableBody" class="divide-y divide-slate-100 text-slate-700">
+                                <!-- JS Inject -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FLEET MANAGEMENT TAB -->
+            <section id="tab-fleet" class="tab-content hidden space-y-5">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Fleet Vehicles Master</h2>
+                        <p class="text-xs text-slate-500">Monitor Friendship Express truck units, insurance and fitness certificates.</p>
+                    </div>
+                    <button onclick="openModal('vehicleModal')" class="role-dispatch bg-slate-900 hover:bg-slate-800 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center gap-2">
+                        <i class="fa-solid fa-truck"></i> Add New Truck
+                    </button>
+                </div>
+
+                <div id="fleetGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- JS Inject -->
+                </div>
+            </section>
+
+            <!-- FULL ACCOUNTING SUITE TAB -->
+            <section id="tab-accounting" class="tab-content hidden space-y-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">General Ledger & Financial Accounting</h2>
+                        <p class="text-xs text-slate-500">Friendship Express Chart of Accounts, Journal Entries, and Ledger Balances.</p>
+                    </div>
+                    <button onclick="openModal('journalModal')" class="role-acct bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-2">
+                        <i class="fa-solid fa-book-bookmark"></i> Create Journal Voucher (JV)
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Account Code: 1010</span>
+                        <h4 class="font-bold text-slate-800 text-sm mt-0.5">HDFC Freight Bank Account</h4>
+                        <div id="acc-bank-bal" class="text-xl font-extrabold text-emerald-600 mt-2">₹ 0</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Main Corporate Account</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Account Code: 2010</span>
+                        <h4 class="font-bold text-slate-800 text-sm mt-0.5">Accounts Receivable (Clients)</h4>
+                        <div id="acc-ar-bal" class="text-xl font-extrabold text-amber-600 mt-2">₹ 0</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Outstanding Freight Invoices</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Account Code: 5010</span>
+                        <h4 class="font-bold text-slate-800 text-sm mt-0.5">Diesel & Fleet Expenses</h4>
+                        <div id="acc-exp-bal" class="text-xl font-extrabold text-rose-600 mt-2">₹ 0</div>
+                        <p class="text-[11px] text-slate-400 mt-1">Total Highway Overhead</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 font-bold text-sm text-slate-800 flex justify-between items-center">
+                        <span>Recent Journal Vouchers (JVs)</span>
+                        <span class="text-xs text-slate-500 font-normal">Double-Entry Accounting Log</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3.5">Voucher No</th>
+                                    <th class="p-3.5">Date</th>
+                                    <th class="p-3.5">Debit Account</th>
+                                    <th class="p-3.5">Credit Account</th>
+                                    <th class="p-3.5">Particulars / Description</th>
+                                    <th class="p-3.5 text-right">Amount (₹)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="journalTableBody" class="divide-y divide-slate-100">
+                                <!-- JS Inject -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- GST INVOICING TAB -->
+            <section id="tab-invoices" class="tab-content hidden space-y-5">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Freight GST Invoicing & Tax Billing</h2>
+                        <p class="text-xs text-slate-500">Tax invoices formatted with Friendship Express GSTIN and CGST/SGST/IGST calculations.</p>
+                    </div>
+                    <button onclick="openModal('invoiceModal')" class="role-acct bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-2">
+                        <i class="fa-solid fa-file-invoice"></i> Raise Freight Tax Invoice
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase tracking-wider font-semibold border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3.5">Invoice No</th>
+                                    <th class="p-3.5">Client Name</th>
+                                    <th class="p-3.5">LR Reference</th>
+                                    <th class="p-3.5">Taxable Freight</th>
+                                    <th class="p-3.5">GST Rate</th>
+                                    <th class="p-3.5">Total Amount (₹)</th>
+                                    <th class="p-3.5">Status</th>
+                                    <th class="p-3.5 text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="invoicesTableBody" class="divide-y divide-slate-100 text-slate-700">
+                                <!-- JS Inject -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FUEL & EXPENSES TAB -->
+            <section id="tab-fuel" class="tab-content hidden space-y-5">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Fuel Slips & Toll Receipts</h2>
+                        <p class="text-xs text-slate-500">Highway Diesel refill logs, PETRO card usages, and Toll FASTag expenses.</p>
+                    </div>
+                    <button onclick="openModal('fuelModal')" class="role-dispatch bg-slate-900 hover:bg-slate-800 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center gap-2">
+                        <i class="fa-solid fa-gas-pump"></i> Record Fuel Purchase
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3.5">Date</th>
+                                    <th class="p-3.5">Vehicle Reg</th>
+                                    <th class="p-3.5">Quantity (Ltrs)</th>
+                                    <th class="p-3.5">Rate / Ltr</th>
+                                    <th class="p-3.5">Total Bill (₹)</th>
+                                    <th class="p-3.5">Fuel Pump / Station</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fuelTableBody" class="divide-y divide-slate-100">
+                                <!-- JS Inject -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- HR SUITE: EMPLOYEE DIRECTORY -->
+            <section id="tab-hr" class="tab-content hidden space-y-5">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Friendship Express HR & Staff Directory</h2>
+                        <p class="text-xs text-slate-500">Employee profiles, designation roles, PAN/Aadhar verification, and bank details.</p>
+                    </div>
+                    <button onclick="openModal('employeeModal')" class="role-hr bg-slate-900 hover:bg-slate-800 text-white font-medium px-4 py-2 rounded-lg text-xs flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus"></i> Register Employee / Driver
+                    </button>
+                </div>
+
+                <div id="employeeGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- JS Inject -->
+                </div>
+            </section>
+
+            <!-- HR SUITE: PAYROLL & PAYSLIPS -->
+            <section id="tab-payroll" class="tab-content hidden space-y-5">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900">Payroll Processing & Salary Slips</h2>
+                        <p class="text-xs text-slate-500">Monthly wages, Driver Batta allowances, PF/ESI deductions, and net payouts in INR (₹).</p>
+                    </div>
+                    <button onclick="processPayroll()" class="role-hr bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg text-xs flex items-center gap-2">
+                        <i class="fa-solid fa-calculator"></i> Run Payroll
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3.5">Emp ID & Name</th>
+                                    <th class="p-3.5">Designation</th>
+                                    <th class="p-3.5">Basic Salary (₹)</th>
+                                    <th class="p-3.5">Allowances / Batta</th>
+                                    <th class="p-3.5">Deductions (PF/TDS)</th>
+                                    <th class="p-3.5">Net Pay (₹)</th>
+                                    <th class="p-3.5 text-center">Payslip Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="payrollTableBody" class="divide-y divide-slate-100 text-slate-700">
+                                <!-- JS Inject -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PROFITABILITY & REPORTS TAB -->
+            <section id="tab-reports" class="tab-content hidden space-y-5">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <h2 class="text-lg font-bold text-slate-900">Friendship Express Vehicle P&L & Profit Margins</h2>
+                    <p class="text-xs text-slate-500 mb-4">Net profit calculations per truck unit after deducting diesel costs, tolls, and driver trip batta.</p>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3.5">Vehicle Reg No</th>
+                                    <th class="p-3.5">Truck Model</th>
+                                    <th class="p-3.5">Total Dispatches</th>
+                                    <th class="p-3.5">Gross Revenue (₹)</th>
+                                    <th class="p-3.5">Direct Expenses (₹)</th>
+                                    <th class="p-3.5">Net Profit (₹)</th>
+                                    <th class="p-3.5">Profit Margin %</th>
+                                </tr>
+                            </thead>
+                            <tbody id="profitabilityTable" class="divide-y divide-slate-100 text-slate-700">
+                                <!-- JS Inject -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- MODAL: ADD CUSTOMER PROFILE -->
+    <div id="customerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div class="px-6 py-4 bg-slate-900 text-white flex justify-between items-center">
+                <h3 class="font-bold text-base"><i class="fa-solid fa-building-user text-amber-400 mr-2"></i>New Customer Profile</h3>
+                <button onclick="closeModal('customerModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="customerForm" onsubmit="handleSaveCustomer(event)" class="p-6 space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Company / Client Name *</label>
+                    <input type="text" id="c_name" required placeholder="e.g. Procter & Gamble India" class="w-full border border-slate-300 rounded-lg p-2">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">GSTIN Number *</label>
+                    <input type="text" id="c_gstin" required placeholder="27AAACP9012R1Z5" class="w-full border border-slate-300 rounded-lg p-2 font-mono uppercase">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Contract Mode</label>
+                        <select id="c_mode" class="w-full border border-slate-300 rounded-lg p-2">
+                            <option value="Contractual">Contractual SLA</option>
+                            <option value="Adhoc / Spot">Adhoc / Spot</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Credit Payment Terms</label>
+                        <select id="c_credit" class="w-full border border-slate-300 rounded-lg p-2">
+                            <option value="30 Days Credit">30 Days Credit</option>
+                            <option value="15 Days Credit">15 Days Credit</option>
+                            <option value="Immediate / Advance">Immediate / Cash</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Key Contact Person & Phone</label>
+                    <input type="text" id="c_contact" placeholder="Sandeep Naik (+91 98900 11223)" class="w-full border border-slate-300 rounded-lg p-2">
+                </div>
+                <div class="pt-3 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('customerModal')" class="px-4 py-2 border rounded-lg">Cancel</button>
+                    <button type="submit" class="px-5 py-2 bg-slate-900 text-white rounded-lg font-bold">Register Customer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: ADD TARIFF RATE CARD -->
+    <div id="rateModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+            <div class="px-6 py-4 bg-slate-900 text-white flex justify-between items-center">
+                <h3 class="font-bold text-base"><i class="fa-solid fa-file-invoice-dollar text-amber-400 mr-2"></i>Add Freight Tariff Master</h3>
+                <button onclick="closeModal('rateModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="rateForm" onsubmit="handleSaveRate(event)" class="p-6 space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Select Customer *</label>
+                    <select id="r_customer" required class="w-full border border-slate-300 rounded-lg p-2 font-semibold">
+                        <!-- Populated JS -->
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Rate Card Type</label>
+                        <select id="r_type" class="w-full border border-slate-300 rounded-lg p-2">
+                            <option value="Contractual">Contractual Agreement</option>
+                            <option value="Adhoc / Spot">Adhoc / Spot Booking</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Vehicle Category *</label>
+                        <select id="r_vehicle" required class="w-full border border-slate-300 rounded-lg p-2">
+                            <option value="32ft MXL Container Truck">32ft MXL Container Truck</option>
+                            <option value="40ft Flatbed Trailer">40ft Flatbed Trailer</option>
+                            <option value="14ft Eicher City Truck">14ft Eicher City Truck</option>
+                            <option value="20ft Heavy Open Body">20ft Heavy Open Body</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Origin Hub / City *</label>
+                        <input type="text" id="r_origin" required placeholder="e.g. Bhiwandi, Mumbai" class="w-full border border-slate-300 rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Destination City *</label>
+                        <input type="text" id="r_destination" required placeholder="e.g. Whitefield, Bengaluru" class="w-full border border-slate-300 rounded-lg p-2">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Agreed Freight Rate (₹) *</label>
+                        <input type="number" id="r_rate" required placeholder="85000" class="w-full border border-slate-300 rounded-lg p-2 font-bold text-slate-900">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Default Driver Advance (₹)</label>
+                        <input type="number" id="r_advance" placeholder="25000" class="w-full border border-slate-300 rounded-lg p-2">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Contract Validity Date</label>
+                    <input type="date" id="r_validity" required class="w-full border border-slate-300 rounded-lg p-2">
+                </div>
+                <div class="pt-3 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('rateModal')" class="px-4 py-2 border rounded-lg">Cancel</button>
+                    <button type="submit" class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg shadow-sm">Save Tariff Master</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: NEW TRIP / LR NOTE WITH AUTO-FETCH -->
+    <div id="tripModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="px-6 py-4 bg-slate-900 text-white flex justify-between items-center">
+                <h3 class="font-bold text-base flex items-center gap-2">
+                    <i class="fa-solid fa-route text-amber-400"></i>
+                    Issue Friendship Express Lorry Receipt (LR)
+                </h3>
+                <button onclick="closeModal('tripModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="tripForm" onsubmit="handleSaveTrip(event)" class="p-6 overflow-y-auto space-y-4 text-xs">
+                
+                <!-- Tariff Auto-Fetch Banner Indicator -->
+                <div id="tariffMatchBanner" class="p-3 bg-amber-50 rounded-xl border border-amber-200 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5 text-amber-900 font-medium">
+                        <i class="fa-solid fa-bolt text-amber-500 text-base"></i>
+                        <span id="tariffMatchText">Select Customer, Route, & Vehicle to auto-fetch agreed tariff card.</span>
+                    </div>
+                    <span id="tariffMatchBadge" class="bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded text-[10px]">Manual Entry</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Select Customer / Client *</label>
+                        <select id="t_client_select" required onchange="triggerRateAutoLookup()" class="w-full border border-slate-300 rounded-lg p-2 font-semibold text-slate-900">
+                            <!-- Populated JS -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Consignment Note / LR No *</label>
+                        <input type="text" id="t_lr" required placeholder="FE-LR-9915" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Origin Hub *</label>
+                        <input type="text" id="t_from" required placeholder="Chakan, Pune" oninput="triggerRateAutoLookup()" class="w-full border border-slate-300 rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Destination City *</label>
+                        <input type="text" id="t_to" required placeholder="Sriperumbudur, Chennai" oninput="triggerRateAutoLookup()" class="w-full border border-slate-300 rounded-lg p-2">
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Assign Fleet Vehicle *</label>
+                        <select id="t_vehicle" required onchange="triggerRateAutoLookup()" class="w-full border border-slate-300 rounded-lg p-2">
+                            <!-- Populated JS -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Assign Heavy Driver *</label>
+                        <select id="t_driver" required class="w-full border border-slate-300 rounded-lg p-2">
+                            <!-- Populated JS -->
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Weight (Tonnes)</label>
+                        <input type="number" step="0.1" id="t_weight" placeholder="18.5" class="w-full border border-slate-300 rounded-lg p-2">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Cargo Material Description</label>
+                        <input type="text" id="t_cargo" placeholder="Automotive Engine Assemblies" class="w-full border border-slate-300 rounded-lg p-2">
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Agreed Freight Rate (₹) *</label>
+                        <input type="number" id="t_freight" required placeholder="92000" class="w-full border border-slate-300 rounded-lg p-2 font-bold text-slate-900 bg-amber-50/50">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Driver Advance Paid (₹)</label>
+                        <input type="number" id="t_advance" placeholder="30000" class="w-full border border-slate-300 rounded-lg p-2">
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-200 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('tripModal')" class="px-4 py-2 border rounded-lg text-slate-600">Cancel</button>
+                    <button type="submit" class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg shadow-sm">Dispatch & Issue LR</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: PRINTABLE LORRY RECEIPT -->
+    <div id="lrViewModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col overflow-hidden">
+            <div class="px-6 py-3 bg-slate-900 text-white flex justify-between items-center no-print">
+                <span class="font-bold text-sm">Lorry Receipt - Friendship Express Pvt Ltd</span>
+                <div class="flex items-center gap-2">
+                    <button onclick="window.print()" class="bg-amber-500 text-slate-950 font-bold px-3 py-1.5 rounded-md text-xs flex items-center gap-1.5">
+                        <i class="fa-solid fa-print"></i> Print Official LR
+                    </button>
+                    <button onclick="closeModal('lrViewModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+            </div>
+            
+            <div id="lrContent" class="p-8 overflow-y-auto printable-area font-sans">
+                <!-- JS populated printable LR template -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: JOURNAL VOUCHER ENTRY -->
+    <div id="journalModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+            <div class="px-6 py-4 bg-slate-900 text-white flex justify-between items-center">
+                <h3 class="font-bold text-base"><i class="fa-solid fa-book-journal-whills text-amber-400 mr-2"></i>New Journal Voucher Entry</h3>
+                <button onclick="closeModal('journalModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="journalForm" onsubmit="handleSaveJV(event)" class="p-6 space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Debit Account (Dr)</label>
+                    <select id="jv_debit" class="w-full border border-slate-300 rounded-lg p-2 font-medium">
+                        <option value="5010">5010 - Fuel & Diesel Expense</option>
+                        <option value="5020">5020 - Toll Tax & FASTag Charges</option>
+                        <option value="5030">5030 - Driver Trip Batta / Allowances</option>
+                        <option value="1010">1010 - HDFC Freight Bank Account</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Credit Account (Cr)</label>
+                    <select id="jv_credit" class="w-full border border-slate-300 rounded-lg p-2 font-medium">
+                        <option value="1010">1010 - HDFC Freight Bank Account</option>
+                        <option value="2010">2010 - Accounts Receivable (Clients)</option>
+                        <option value="3010">3010 - Petty Cash Account</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Voucher Amount (₹)</label>
+                    <input type="number" id="jv_amount" required placeholder="12500" class="w-full border border-slate-300 rounded-lg p-2 font-bold text-slate-900">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Particulars / Narration</label>
+                    <input type="text" id="jv_narration" required placeholder="Highway toll FASTag auto-recharge for MH-12 trucks" class="w-full border border-slate-300 rounded-lg p-2">
+                </div>
+                <div class="pt-3 flex justify-end gap-2">
+                    <button type="button" onclick="closeModal('journalModal')" class="px-4 py-2 border rounded-lg">Cancel</button>
+                    <button type="submit" class="px-5 py-2 bg-slate-900 text-white rounded-lg font-bold">Post Journal Voucher</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: PAYSLIP PREVIEW -->
+    <div id="payslipModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="px-6 py-3 bg-slate-900 text-white flex justify-between items-center no-print">
+                <span class="font-bold text-sm">Official Employee Payslip</span>
+                <div class="flex items-center gap-2">
+                    <button onclick="window.print()" class="bg-amber-500 text-slate-950 font-bold px-3 py-1.5 rounded-md text-xs">Print Payslip</button>
+                    <button onclick="closeModal('payslipModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+            <div id="payslipContent" class="p-8 overflow-y-auto printable-area font-sans text-xs">
+                <!-- JS populated -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: GLOBAL SEARCH -->
+    <div id="searchModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-start justify-center pt-20 hidden p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-xl w-full overflow-hidden border border-slate-200">
+            <div class="p-3 border-b border-slate-200 flex items-center gap-3">
+                <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+                <input type="text" id="globalSearchInput" oninput="runGlobalSearch()" placeholder="Search Friendship Express LR, Customers, Tariffs, Trucks, Staff..." class="w-full border-0 focus:ring-0 text-sm text-slate-800">
+                <button onclick="closeModal('searchModal')" class="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded">ESC</button>
+            </div>
+            <div id="searchResults" class="max-h-80 overflow-y-auto p-2 divide-y divide-slate-100 text-xs">
+                <p class="text-slate-400 text-center py-6">Start typing to search ERP records...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT & STATE -->
+    <script>
+        // FRIENDSHIP EXPRESS PVT LTD - CORPORATE INITIAL MOCK ERP DATA
+        const defaultData = {
+            customers: [
+                { id: 'CUST-101', name: 'Mahindra Logistics Ltd', gstin: '27AAACM1234F1Z8', contractType: 'Contractual', contactPerson: 'Anil Kulkarni', phone: '+91 98200 11223', paymentTerms: '30 Days Credit', status: 'Active' },
+                { id: 'CUST-102', name: 'Tata Motors Freight', gstin: '27AAACT9988G1Z2', contractType: 'Contractual', contactPerson: 'Sanjay Verma', phone: '+91 98111 44556', paymentTerms: '15 Days Credit', status: 'Active' },
+                { id: 'CUST-103', name: 'Reliance Retail Logistics', gstin: '27AAACR5544H1Z1', contractType: 'Adhoc / Spot', contactPerson: 'Mehul Patel', phone: '+91 97654 32100', paymentTerms: 'Immediate / Advance', status: 'Active' }
+            ],
+            freightRates: [
+                { id: 'RATE-101', customerId: 'CUST-101', contractType: 'Contractual', origin: 'Chakan, Pune', destination: 'Sriperumbudur, Chennai', vehicleType: '32ft MXL Container Truck', rate: 92000, defaultAdvance: 30000, validTill: '2027-03-31' },
+                { id: 'RATE-102', customerId: 'CUST-101', contractType: 'Contractual', origin: 'Bhiwandi, Mumbai', destination: 'Whitefield, Bengaluru', vehicleType: '32ft MXL Container Truck', rate: 78000, defaultAdvance: 25000, validTill: '2027-03-31' },
+                { id: 'RATE-103', customerId: 'CUST-102', contractType: 'Contractual', origin: 'Bhiwandi, Mumbai', destination: 'Sanand, Gujarat', vehicleType: '40ft Flatbed Trailer', rate: 68000, defaultAdvance: 20000, validTill: '2026-12-31' },
+                { id: 'RATE-104', customerId: 'CUST-103', contractType: 'Adhoc / Spot', origin: 'Bhiwandi, Mumbai', destination: 'Sanand, Gujarat', vehicleType: '14ft Eicher City Truck', rate: 38000, defaultAdvance: 12000, validTill: '2026-09-30' }
+            ],
+            employees: [
+                { id: 'EMP-101', name: 'Vikramaditya Sharma', role: 'Managing Director (Admin)', basicPay: 120000, pan: 'AMVPS9921K', bank: 'HDFC Bank - 501001298811', status: 'Active' },
+                { id: 'EMP-102', name: 'Rajesh Patil', role: 'Dispatch Supervisor', basicPay: 45000, pan: 'BKRPA4410M', bank: 'ICICI Bank - 001201588102', status: 'Active' },
+                { id: 'EMP-103', name: 'Ananya Deshmukh', role: 'Chief Accountant', basicPay: 65000, pan: 'CPXAD7712L', bank: 'Axis Bank - 918010044551', status: 'Active' },
+                { id: 'EMP-104', name: 'Priya Nair', role: 'HR Manager', basicPay: 55000, pan: 'DLPNR3390P', bank: 'SBI Bank - 30891102931', status: 'Active' },
+                { id: 'EMP-105', name: 'Ramesh Singh', role: 'Heavy Truck Driver', basicPay: 28000, pan: 'ERPSI1192Q', bank: 'Bank of Baroda - 2800109923', status: 'On Trip' }
+            ],
+            vehicles: [
+                { id: 'V01', regNo: 'MH-12-FE-8812', type: '32ft MXL Container Truck', odometer: 184200, status: 'In Transit', fuelCap: 350, insExpiry: '2027-01-15', fitExpiry: '2027-04-10' },
+                { id: 'V02', regNo: 'MH-04-FE-9901', type: '40ft Flatbed Trailer', odometer: 210400, status: 'Available', fuelCap: 400, insExpiry: '2026-11-20', fitExpiry: '2027-02-05' },
+                { id: 'V03', regNo: 'MH-43-FE-1022', type: '14ft Eicher City Truck', odometer: 94000, status: 'Maintenance', fuelCap: 160, insExpiry: '2026-09-10', fitExpiry: '2026-10-01' }
+            ],
+            trips: [
+                { id: 'TRP-301', lrNo: 'FE-LR-9912', client: 'Mahindra Logistics Ltd', origin: 'Chakan, Pune', destination: 'Sriperumbudur, Chennai', vehicleId: 'V01', driverId: 'EMP-105', weight: 18.5, cargo: 'Automotive Engine Blocks', freight: 92000, advance: 30000, status: 'In Transit', date: '2026-07-20' },
+                { id: 'TRP-300', lrNo: 'FE-LR-9911', client: 'Tata Motors Freight', origin: 'Bhiwandi, Mumbai', destination: 'Sanand, Gujarat', vehicleId: 'V02', driverId: 'EMP-105', weight: 14.0, cargo: 'Press Body Panels', freight: 68000, advance: 20000, status: 'Completed', date: '2026-07-15' }
+            ],
+            journals: [
+                { id: 'JV-801', date: '2026-07-20', debitAcc: '5010 (Fuel Expense)', creditAcc: '1010 (Bank Account)', amount: 18500, narration: 'Diesel Refill at BPCL Kolhapur Highway for MH-12-FE-8812' }
+            ],
+            invoices: [
+                { id: 'INV-2026-101', tripId: 'TRP-300', lrNo: 'FE-LR-9911', client: 'Tata Motors Freight', date: '2026-07-16', amount: 68000, gstRate: 12, total: 76160, status: 'Paid' }
+            ],
+            fuelLogs: [
+                { id: 'FL-901', vehicleId: 'V01', date: '2026-07-20', liters: 200, rate: 92.5, total: 18500, pump: 'BPCL Expressway Station' }
+            ]
+        };
+
+        let state = JSON.parse(localStorage.getItem('friendship_express_erp_v5')) || defaultData;
+        let currentUser = state.employees[0];
+        let useCloudSync = false;
+        let db = null;
+
+        // OPTIONAL FIREBASE INITIALIZATION
+        try {
+            // Replace with your Firebase credentials if enabling real-time cloud storage across devices
+            const firebaseConfig = {
+                apiKey: "",
+                authDomain: "friendship-express-erp.firebaseapp.com",
+                projectId: "friendship-express-erp",
+                storageBucket: "friendship-express-erp.appspot.com",
+                messagingSenderId: "1234567890",
+                appId: "1:1234567890:web:123456"
+            };
+
+            if (firebaseConfig.apiKey && firebaseConfig.apiKey.length > 5) {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                useCloudSync = true;
+                document.getElementById('cloudStatusBadge').classList.remove('hidden');
+            }
+        } catch(e) {
+            console.log("Running in LocalStorage mode.");
+        }
+
+        function saveState() {
+            localStorage.setItem('friendship_express_erp_v5', JSON.stringify(state));
+            updateBadges();
+        }
+
+        function formatINR(val) {
+            const num = parseFloat(val) || 0;
+            return '₹ ' + num.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+        }
+
+        let financialsChartInstance = null;
+        let fleetStatusChartInstance = null;
+
+        // INITIALIZATION
+        window.addEventListener('DOMContentLoaded', () => {
+            applyUserRolePermissions();
+            renderDashboard();
+            renderCustomerSuite();
+            renderTrips();
+            renderFleet();
+            renderAccounting();
+            renderInvoices();
+            renderFuel();
+            renderHR();
+            renderPayroll();
+            renderProfitability();
+            populateDropdowns();
+            updateBadges();
+
+            if (useCloudSync) {
+                setupCloudRealtimeListeners();
+            }
+
+            window.addEventListener('keydown', (e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                    e.preventDefault();
+                    openSearchModal();
+                }
+            });
+        });
+
+        function setupCloudRealtimeListeners() {
+            if (!db) return;
+
+            db.collection('trips').onSnapshot(snapshot => {
+                if (!snapshot.empty) {
+                    state.trips = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderTrips();
+                    renderDashboard();
+                    renderProfitability();
+                    updateBadges();
+                }
+            });
+
+            db.collection('customers').onSnapshot(snapshot => {
+                if (!snapshot.empty) {
+                    state.customers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    renderCustomerSuite();
+                    populateDropdowns();
+                }
+            });
+        }
+
+        // ROLE SWITCHER SYSTEM
+        function switchUserRole(empId) {
+            const found = state.employees.find(e => e.id === empId);
+            if (found) {
+                currentUser = found;
+                document.getElementById('activeUserName').innerText = currentUser.name;
+                document.getElementById('activeUserRole').innerText = currentUser.role;
+                applyUserRolePermissions();
+            }
+        }
+
+        function applyUserRolePermissions() {
+            const role = currentUser.role;
+            const isHR = role.includes('HR') || role.includes('Admin');
+            const isAcct = role.includes('Accountant') || role.includes('Admin');
+            const isDispatch = role.includes('Dispatch') || role.includes('Admin');
+
+            document.querySelectorAll('.role-hr').forEach(el => el.style.display = isHR ? 'inline-flex' : 'none');
+            document.querySelectorAll('.role-acct').forEach(el => el.style.display = isAcct ? 'inline-flex' : 'none');
+            document.querySelectorAll('.role-dispatch').forEach(el => el.style.display = isDispatch ? 'inline-flex' : 'none');
+        }
+
+        // TAB SWITCHER
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('bg-slate-800', 'text-white', 'border-r-4', 'border-amber-500');
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const activeNav = document.getElementById(`nav-${tabId}`);
+            if (activeNav) {
+                activeNav.classList.add('bg-slate-800', 'text-white', 'border-r-4', 'border-amber-500');
+            }
+
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+            if (tabId === 'dashboard') initDashboardCharts();
+        }
+
+        document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+        });
+
+        function updateBadges() {
+            const activeTrips = state.trips.filter(t => t.status === 'In Transit').length;
+            document.getElementById('badge-active-trips').innerText = activeTrips;
+            document.getElementById('badge-total-fleet').innerText = state.vehicles.length;
+            document.getElementById('badge-total-customers').innerText = state.customers.length;
+        }
+
+        function populateDropdowns() {
+            const vSelects = ['t_vehicle'];
+            vSelects.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.innerHTML = state.vehicles.map(v => `<option value="${v.id}">${v.regNo} (${v.type})</option>`).join('');
+            });
+
+            const dSelect = document.getElementById('t_driver');
+            if (dSelect) dSelect.innerHTML = state.employees.map(e => `<option value="${e.id}">${e.name} (${e.role})</option>`).join('');
+
+            const cTripSelect = document.getElementById('t_client_select');
+            if (cTripSelect) {
+                cTripSelect.innerHTML = state.customers.map(c => `<option value="${c.id}">${c.name} (${c.contractType})</option>`).join('');
+            }
+
+            const cRateSelect = document.getElementById('r_customer');
+            if (cRateSelect) {
+                cRateSelect.innerHTML = state.customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            }
+
+            const tFilter = document.getElementById('tariffCustomerFilter');
+            if (tFilter) {
+                tFilter.innerHTML = `<option value="ALL">All Clients</option>` + state.customers.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            }
+        }
+
+        // RENDER DASHBOARD
+        function renderDashboard() {
+            const totalRev = state.trips.reduce((acc, t) => acc + (parseFloat(t.freight) || 0), 0);
+            const totalFuel = state.fuelLogs.reduce((acc, f) => acc + (parseFloat(f.total) || 0), 0);
+            const activeTrips = state.trips.filter(t => t.status === 'In Transit').length;
+
+            document.getElementById('dash-revenue').innerText = formatINR(totalRev);
+            document.getElementById('dash-fuel-cost').innerText = formatINR(totalFuel);
+            document.getElementById('dash-contract-clients').innerText = state.customers.filter(c => c.contractType === 'Contractual').length;
+            document.getElementById('dash-active-rates').innerText = `${state.freightRates.length} Agreed Rate Cards`;
+            document.getElementById('dash-active-trips').innerText = activeTrips;
+
+            initDashboardCharts();
+        }
+
+        function initDashboardCharts() {
+            const ctx1 = document.getElementById('financialsChart');
+            if (!ctx1) return;
+            if (financialsChartInstance) financialsChartInstance.destroy();
+
+            financialsChartInstance = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
+                    datasets: [
+                        { label: 'Freight Revenue (₹)', data: [420000, 510000, 680000, 590000, 720000, 810000], backgroundColor: '#0284c7', borderRadius: 6 },
+                        { label: 'Fuel & Tolls Expense (₹)', data: [190000, 220000, 280000, 240000, 310000, 350000], backgroundColor: '#f43f5e', borderRadius: 6 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            const ctx2 = document.getElementById('fleetStatusChart');
+            if (!ctx2) return;
+            if (fleetStatusChartInstance) fleetStatusChartInstance.destroy();
+
+            fleetStatusChartInstance = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Available', 'In Transit', 'Maintenance'],
+                    datasets: [{ data: [1, 1, 1], backgroundColor: ['#10b981', '#0284c7', '#f59e0b'] }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '70%' }
+            });
+        }
+
+        // RENDER CUSTOMER SUITE
+        function renderCustomerSuite() {
+            const cGrid = document.getElementById('customerMasterGrid');
+            cGrid.innerHTML = state.customers.map(c => `
+                <div class="bg-white rounded-xl p-4 border border-slate-200 shadow-sm space-y-2">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[10px] font-bold font-mono text-slate-400">${c.id}</span>
+                            <h4 class="font-bold text-slate-900 text-sm">${c.name}</h4>
+                        </div>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${c.contractType === 'Contractual' ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700'}">${c.contractType}</span>
+                    </div>
+                    <div class="text-xs text-slate-600 pt-2 border-t border-slate-100 space-y-1">
+                        <p>GSTIN: <span class="font-mono font-bold text-slate-800">${c.gstin}</span></p>
+                        <p>Contact: <span class="font-medium text-slate-800">${c.contactPerson} (${c.phone})</span></p>
+                        <p>Credit Terms: <span class="font-bold text-emerald-700">${c.paymentTerms}</span></p>
+                    </div>
+                </div>
+            `).join('');
+
+            renderTariffMatrix();
+        }
+
+        function renderTariffMatrix() {
+            const custFilter = document.getElementById('tariffCustomerFilter')?.value || 'ALL';
+            const typeFilter = document.getElementById('tariffTypeFilter')?.value || 'ALL';
+
+            const filtered = state.freightRates.filter(r => {
+                const matchC = custFilter === 'ALL' || r.customerId === custFilter;
+                const matchT = typeFilter === 'ALL' || r.contractType === typeFilter;
+                return matchC && matchT;
+            });
+
+            const body = document.getElementById('tariffMatrixTableBody');
+            body.innerHTML = filtered.map(r => {
+                const cust = state.customers.find(c => c.id === r.customerId) || {};
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3.5 font-bold text-slate-900">${r.id}</td>
+                        <td class="p-3.5 font-semibold text-slate-800">${cust.name || 'N/A'}</td>
+                        <td class="p-3.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.contractType === 'Contractual' ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800'}">${r.contractType}</span></td>
+                        <td class="p-3.5 font-medium text-slate-900">${r.origin} ➔ ${r.destination}</td>
+                        <td class="p-3.5 text-slate-600">${r.vehicleType}</td>
+                        <td class="p-3.5 font-black text-emerald-700">${formatINR(r.rate)}</td>
+                        <td class="p-3.5 font-semibold text-slate-700">${formatINR(r.defaultAdvance)}</td>
+                        <td class="p-3.5 text-slate-500">${r.validTill}</td>
+                        <td class="p-3.5 text-center">
+                            <button onclick="quickDispatchRoute('${r.id}')" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-2.5 py-1 rounded text-xs transition">
+                                <i class="fa-solid fa-play mr-1 text-amber-400"></i> Dispatch
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // TARIFF AUTO-LOOKUP DURING TRIP CREATION
+        function triggerRateAutoLookup() {
+            const custId = document.getElementById('t_client_select').value;
+            const originInput = document.getElementById('t_from').value.trim().toLowerCase();
+            const destInput = document.getElementById('t_to').value.trim().toLowerCase();
+            const vehId = document.getElementById('t_vehicle').value;
+            const vehicleObj = state.vehicles.find(v => v.id === vehId) || {};
+            const vehicleType = vehicleObj.type || '';
+
+            // Match Customer + Origin + Destination + Vehicle Type
+            const match = state.freightRates.find(r => {
+                const sameCustomer = r.customerId === custId;
+                const matchOrigin = !originInput || r.origin.toLowerCase().includes(originInput) || originInput.includes(r.origin.toLowerCase());
+                const matchDest = !destInput || r.destination.toLowerCase().includes(destInput) || destInput.includes(r.destination.toLowerCase());
+                const matchVeh = !vehicleType || r.vehicleType === vehicleType;
+                return sameCustomer && matchOrigin && matchDest && matchVeh;
+            });
+
+            const textEl = document.getElementById('tariffMatchText');
+            const badgeEl = document.getElementById('tariffMatchBadge');
+
+            if (match) {
+                document.getElementById('t_freight').value = match.rate;
+                document.getElementById('t_advance').value = match.defaultAdvance;
+                
+                if (match.origin && !document.getElementById('t_from').value) document.getElementById('t_from').value = match.origin;
+                if (match.destination && !document.getElementById('t_to').value) document.getElementById('t_to').value = match.destination;
+
+                textEl.innerHTML = `✓ Auto-fetched Agreed <b>${match.contractType} Tariff Card (${match.id})</b>: ₹ ${match.rate.toLocaleString()}`;
+                badgeEl.innerText = `${match.contractType} Rate`;
+                badgeEl.className = 'bg-emerald-600 text-white font-bold px-2.5 py-1 rounded text-[10px]';
+            } else {
+                textEl.innerHTML = `No exact contract tariff card matched for selected inputs. Enter adhoc rate manually below.`;
+                badgeEl.innerText = `Spot / Adhoc Rate`;
+                badgeEl.className = 'bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded text-[10px]';
+            }
+        }
+
+        function quickDispatchRoute(rateId) {
+            const rate = state.freightRates.find(r => r.id === rateId);
+            if (!rate) return;
+
+            openModal('tripModal');
+            document.getElementById('t_client_select').value = rate.customerId;
+            document.getElementById('t_from').value = rate.origin;
+            document.getElementById('t_to').value = rate.destination;
+            
+            // Set vehicle dropdown if matches type
+            const matchingVeh = state.vehicles.find(v => v.type === rate.vehicleType);
+            if (matchingVeh) document.getElementById('t_vehicle').value = matchingVeh.id;
+
+            triggerRateAutoLookup();
+        }
+
+        // RENDER TRIPS
+        function renderTrips() {
+            const body = document.getElementById('tripsTableBody');
+            body.innerHTML = state.trips.map(t => {
+                const veh = state.vehicles.find(v => v.id === t.vehicleId) || {};
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3.5 font-bold text-slate-900">${t.lrNo}<div class="text-[10px] text-slate-400 font-mono">${t.id}</div></td>
+                        <td class="p-3.5 font-semibold text-slate-800">${t.client}</td>
+                        <td class="p-3.5">${t.origin} ➔ ${t.destination}</td>
+                        <td class="p-3.5 font-bold text-slate-800">${veh.regNo || 'N/A'}</td>
+                        <td class="p-3.5 font-bold text-emerald-700">${formatINR(t.freight)}</td>
+                        <td class="p-3.5 text-slate-600">${formatINR(t.advance)}</td>
+                        <td class="p-3.5"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800">${t.status}</span></td>
+                        <td class="p-3.5 text-center">
+                            <button onclick="viewLR('${t.id}')" class="bg-amber-100 hover:bg-amber-500 hover:text-slate-950 font-bold px-2.5 py-1 rounded text-xs">Print LR</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // RENDER FLEET
+        function renderFleet() {
+            const grid = document.getElementById('fleetGrid');
+            grid.innerHTML = state.vehicles.map(v => `
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center">
+                            <span class="bg-slate-900 text-amber-400 font-mono font-bold text-xs px-2.5 py-1 rounded">${v.regNo}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">${v.status}</span>
+                        </div>
+                        <h4 class="font-bold text-slate-800 text-xs mt-3">${v.type}</h4>
+                    </div>
+                    <div class="my-3 py-2 border-y border-slate-100 grid grid-cols-2 gap-2 text-xs">
+                        <div><p class="text-slate-400 text-[10px]">ODOMETER</p><p class="font-bold">${v.odometer.toLocaleString()} KM</p></div>
+                        <div><p class="text-slate-400 text-[10px]">FUEL CAP</p><p class="font-bold">${v.fuelCap} Ltr</p></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // RENDER ACCOUNTING
+        function renderAccounting() {
+            const body = document.getElementById('journalTableBody');
+            body.innerHTML = state.journals.map(j => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3.5 font-bold text-slate-900">${j.id}</td>
+                    <td class="p-3.5 text-slate-500">${j.date}</td>
+                    <td class="p-3.5 font-semibold text-rose-700">${j.debitAcc}</td>
+                    <td class="p-3.5 font-semibold text-emerald-700">${j.creditAcc}</td>
+                    <td class="p-3.5 text-slate-600">${j.narration}</td>
+                    <td class="p-3.5 font-bold text-right text-slate-900">${formatINR(j.amount)}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('acc-bank-bal').innerText = formatINR(485000);
+            document.getElementById('acc-ar-bal').innerText = formatINR(103040);
+            document.getElementById('acc-exp-bal').innerText = formatINR(22700);
+        }
+
+        // RENDER INVOICES
+        function renderInvoices() {
+            const body = document.getElementById('invoicesTableBody');
+            body.innerHTML = state.invoices.map(inv => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3.5 font-bold text-slate-900">${inv.id}</td>
+                    <td class="p-3.5 font-semibold text-slate-800">${inv.client}</td>
+                    <td class="p-3.5 font-mono text-slate-500">${inv.lrNo}</td>
+                    <td class="p-3.5 font-bold">${formatINR(inv.amount)}</td>
+                    <td class="p-3.5">${inv.gstRate}% GST</td>
+                    <td class="p-3.5 font-black text-slate-900">${formatINR(inv.total)}</td>
+                    <td class="p-3.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${inv.status === 'Paid' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${inv.status}</span></td>
+                    <td class="p-3.5 text-center"><button onclick="toggleInvoice('${inv.id}')" class="text-xs bg-slate-100 hover:bg-slate-800 hover:text-white px-2 py-1 rounded">Toggle Payment</button></td>
+                </tr>
+            `).join('');
+        }
+
+        // RENDER FUEL LOGS
+        function renderFuel() {
+            const body = document.getElementById('fuelTableBody');
+            body.innerHTML = state.fuelLogs.map(f => {
+                const veh = state.vehicles.find(v => v.id === f.vehicleId) || {};
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3.5 text-slate-500">${f.date}</td>
+                        <td class="p-3.5 font-bold text-slate-900">${veh.regNo || 'N/A'}</td>
+                        <td class="p-3.5">${f.liters} L</td>
+                        <td class="p-3.5">₹ ${f.rate}/L</td>
+                        <td class="p-3.5 font-bold text-rose-600">${formatINR(f.total)}</td>
+                        <td class="p-3.5 text-slate-600">${f.pump}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // RENDER HR EMPLOYEES
+        function renderHR() {
+            const grid = document.getElementById('employeeGrid');
+            grid.innerHTML = state.employees.map(e => `
+                <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm space-y-2">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 font-mono">${e.id}</span>
+                            <h4 class="font-bold text-slate-900 text-sm">${e.name}</h4>
+                            <p class="text-xs font-medium text-amber-600">${e.role}</p>
+                        </div>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">${e.status}</span>
+                    </div>
+                    <div class="pt-2 border-t border-slate-100 text-xs text-slate-600 space-y-1">
+                        <p>PAN: <span class="font-mono font-bold text-slate-800">${e.pan}</span></p>
+                        <p>Monthly Basic: <span class="font-bold text-slate-900">${formatINR(e.basicPay)}</span></p>
+                        <p class="text-[11px] text-slate-400 truncate">${e.bank}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // RENDER PAYROLL
+        function renderPayroll() {
+            const body = document.getElementById('payrollTableBody');
+            body.innerHTML = state.employees.map(e => {
+                const allowances = e.role.includes('Driver') ? 8500 : 4000;
+                const deductions = Math.round(e.basicPay * 0.12);
+                const netPay = e.basicPay + allowances - deductions;
+
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3.5 font-bold text-slate-900">${e.name}<div class="text-[10px] text-slate-400 font-mono">${e.id}</div></td>
+                        <td class="p-3.5 text-slate-600">${e.role}</td>
+                        <td class="p-3.5 font-semibold">${formatINR(e.basicPay)}</td>
+                        <td class="p-3.5 text-emerald-600 font-medium">+ ${formatINR(allowances)}</td>
+                        <td class="p-3.5 text-rose-600 font-medium">- ${formatINR(deductions)}</td>
+                        <td class="p-3.5 font-black text-slate-900">${formatINR(netPay)}</td>
+                        <td class="p-3.5 text-center">
+                            <button onclick="viewPayslip('${e.id}')" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-2.5 py-1 rounded text-xs">Payslip</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // RENDER PROFITABILITY
+        function renderProfitability() {
+            const body = document.getElementById('profitabilityTable');
+            body.innerHTML = state.vehicles.map(v => {
+                const vTrips = state.trips.filter(t => t.vehicleId === v.id);
+                const rev = vTrips.reduce((acc, t) => acc + (parseFloat(t.freight) || 0), 0);
+                const fuel = state.fuelLogs.filter(f => f.vehicleId === v.id).reduce((acc, f) => acc + (parseFloat(f.total) || 0), 0);
+                const profit = rev - fuel;
+                const margin = rev > 0 ? Math.round((profit / rev) * 100) : 0;
+
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3.5 font-bold text-slate-900">${v.regNo}</td>
+                        <td class="p-3.5 text-slate-500">${v.type}</td>
+                        <td class="p-3.5 font-semibold">${vTrips.length} Dispatches</td>
+                        <td class="p-3.5 font-bold text-slate-900">${formatINR(rev)}</td>
+                        <td class="p-3.5 text-rose-600 font-medium">${formatINR(fuel)}</td>
+                        <td class="p-3.5 font-black text-emerald-600">${formatINR(profit)}</td>
+                        <td class="p-3.5"><span class="px-2 py-0.5 rounded font-bold bg-emerald-100 text-emerald-800">${margin}%</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // FORM HANDLERS
+        function handleSaveCustomer(e) {
+            e.preventDefault();
+            const newCust = {
+                id: 'CUST-' + (state.customers.length + 104),
+                name: document.getElementById('c_name').value,
+                gstin: document.getElementById('c_gstin').value.toUpperCase(),
+                contractType: document.getElementById('c_mode').value,
+                contactPerson: document.getElementById('c_contact').value || 'Logistics Admin',
+                phone: '+91 98000 00000',
+                paymentTerms: document.getElementById('c_credit').value,
+                status: 'Active'
+            };
+
+            state.customers.push(newCust);
+            
+            if (useCloudSync && db) {
+                db.collection('customers').doc(newCust.id).set(newCust);
+            }
+
+            saveState();
+            renderCustomerSuite();
+            populateDropdowns();
+            closeModal('customerModal');
+        }
+
+        function handleSaveRate(e) {
+            e.preventDefault();
+            const newRate = {
+                id: 'RATE-' + (state.freightRates.length + 105),
+                customerId: document.getElementById('r_customer').value,
+                contractType: document.getElementById('r_type').value,
+                origin: document.getElementById('r_origin').value,
+                destination: document.getElementById('r_destination').value,
+                vehicleType: document.getElementById('r_vehicle').value,
+                rate: parseFloat(document.getElementById('r_rate').value) || 0,
+                defaultAdvance: parseFloat(document.getElementById('r_advance').value) || 0,
+                validTill: document.getElementById('r_validity').value
+            };
+
+            state.freightRates.unshift(newRate);
+
+            if (useCloudSync && db) {
+                db.collection('freightRates').doc(newRate.id).set(newRate);
+            }
+
+            saveState();
+            renderTariffMatrix();
+            closeModal('rateModal');
+        }
+
+        function handleSaveTrip(e) {
+            e.preventDefault();
+            const custId = document.getElementById('t_client_select').value;
+            const custObj = state.customers.find(c => c.id === custId) || {};
+
+            const newTrip = {
+                id: 'TRP-' + Math.floor(Math.random() * 1000),
+                client: custObj.name || 'Adhoc Client',
+                lrNo: document.getElementById('t_lr').value,
+                origin: document.getElementById('t_from').value,
+                destination: document.getElementById('t_to').value,
+                vehicleId: document.getElementById('t_vehicle').value,
+                driverId: document.getElementById('t_driver').value,
+                weight: parseFloat(document.getElementById('t_weight').value) || 0,
+                cargo: document.getElementById('t_cargo').value,
+                freight: parseFloat(document.getElementById('t_freight').value) || 0,
+                advance: parseFloat(document.getElementById('t_advance').value) || 0,
+                status: 'In Transit',
+                date: new Date().toISOString().split('T')[0]
+            };
+
+            state.trips.unshift(newTrip);
+
+            if (useCloudSync && db) {
+                db.collection('trips').doc(newTrip.id).set(newTrip);
+            }
+
+            saveState();
+            renderTrips();
+            renderDashboard();
+            closeModal('tripModal');
+        }
+
+        function handleSaveJV(e) {
+            e.preventDefault();
+            const newJV = {
+                id: 'JV-' + Math.floor(Math.random() * 1000),
+                date: new Date().toISOString().split('T')[0],
+                debitAcc: document.getElementById('jv_debit').value,
+                creditAcc: document.getElementById('jv_credit').value,
+                amount: parseFloat(document.getElementById('jv_amount').value) || 0,
+                narration: document.getElementById('jv_narration').value
+            };
+
+            state.journals.unshift(newJV);
+            saveState();
+            renderAccounting();
+            closeModal('journalModal');
+        }
+
+        function viewLR(tripId) {
+            const trip = state.trips.find(t => t.id === tripId);
+            if (!trip) return;
+
+            const vehicle = state.vehicles.find(v => v.id === trip.vehicleId) || {};
+            const driver = state.employees.find(e => e.id === trip.driverId) || {};
+
+            const html = `
+                <div class="border-2 border-slate-900 p-6 space-y-4">
+                    <div class="flex justify-between items-start border-b-2 border-slate-900 pb-4">
+                        <div>
+                            <h1 class="text-2xl font-black text-slate-900 tracking-wider uppercase">Friendship Express Pvt Ltd</h1>
+                            <p class="text-xs text-slate-600">Head Office: 501, Express Logistics Tower, Kalamboli, Navi Mumbai - 410218</p>
+                            <p class="text-xs text-slate-600">GSTIN: 27AABCF9012R1ZX | CIN: U60231MH2018PTC309112</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs font-bold border border-slate-900 px-2 py-1">CONSIGNMENT NOTE / LR</span>
+                            <h2 class="text-xl font-extrabold text-amber-600 mt-2">${trip.lrNo}</h2>
+                            <p class="text-xs text-slate-500">Date: ${trip.date}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 text-xs border-b border-slate-300 pb-3">
+                        <div>
+                            <p class="text-slate-400 font-semibold uppercase">Consignor (Client)</p>
+                            <p class="font-bold text-slate-900 text-sm">${trip.client}</p>
+                            <p class="text-slate-600">Origin: ${trip.origin}</p>
+                        </div>
+                        <div>
+                            <p class="text-slate-400 font-semibold uppercase">Consignee (Destination Depot)</p>
+                            <p class="font-bold text-slate-900 text-sm">${trip.client} Warehouse</p>
+                            <p class="text-slate-600">Destination: ${trip.destination}</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded text-xs">
+                        <div><span class="text-slate-400">Truck No:</span> <span class="font-bold font-mono">${vehicle.regNo || 'N/A'}</span></div>
+                        <div><span class="text-slate-400">Driver Name:</span> <span class="font-bold">${driver.name || 'N/A'}</span></div>
+                        <div><span class="text-slate-400">Cargo Weight:</span> <span class="font-bold">${trip.weight} Tonnes</span></div>
+                    </div>
+
+                    <div class="flex justify-between items-end border-t border-slate-300 pt-3 text-xs">
+                        <div><p class="font-bold text-slate-700">Freight Chargeable Summary:</p></div>
+                        <div class="text-right space-y-1">
+                            <div class="flex justify-between gap-8"><span class="text-slate-500">Freight Rate:</span> <span class="font-bold">${formatINR(trip.freight)}</span></div>
+                            <div class="flex justify-between gap-8"><span class="text-slate-500">Driver Advance:</span> <span class="text-emerald-600 font-bold">${formatINR(trip.advance)}</span></div>
+                            <div class="flex justify-between gap-8 border-t border-slate-900 pt-1 text-sm font-black"><span>Balance Payable:</span> <span>${formatINR(trip.freight - trip.advance)}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-8 pt-8 text-center text-xs text-slate-500">
+                        <div class="border-t border-slate-300 pt-2">Consignor Signature</div>
+                        <div class="border-t border-slate-300 pt-2">For Friendship Express Pvt Ltd</div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('lrContent').innerHTML = html;
+            openModal('lrViewModal');
+        }
+
+        function viewPayslip(empId) {
+            const emp = state.employees.find(e => e.id === empId);
+            if (!emp) return;
+
+            const basic = emp.basicPay;
+            const hra = Math.round(basic * 0.4);
+            const batta = emp.role.includes('Driver') ? 8500 : 2000;
+            const pf = Math.round(basic * 0.12);
+            const gross = basic + hra + batta;
+            const net = gross - pf;
+
+            const html = `
+                <div class="border-2 border-slate-900 p-6 space-y-4">
+                    <div class="text-center border-b pb-3">
+                        <h2 class="text-xl font-black uppercase text-slate-900">Friendship Express Pvt Ltd</h2>
+                        <p class="text-slate-500 text-[11px]">Salary Slip for the Month of July 2026</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div><p>Employee Name: <b>${emp.name}</b></p><p>Emp ID: <b>${emp.id}</b></p></div>
+                        <div><p>Designation: <b>${emp.role}</b></p><p>PAN Card: <b>${emp.pan}</b></p></div>
+                    </div>
+                    <table class="w-full text-xs border border-slate-300 my-2">
+                        <thead class="bg-slate-100">
+                            <tr><th class="p-2 text-left border">Earnings</th><th class="p-2 text-right border">Amount (₹)</th><th class="p-2 text-left border">Deductions</th><th class="p-2 text-right border">Amount (₹)</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td class="p-2 border">Basic Pay</td><td class="p-2 text-right border">${formatINR(basic)}</td><td class="p-2 border">Provident Fund (PF)</td><td class="p-2 text-right border">${formatINR(pf)}</td></tr>
+                            <tr><td class="p-2 border">House Rent Allowance (HRA)</td><td class="p-2 text-right border">${formatINR(hra)}</td><td class="p-2 border">Professional Tax</td><td class="p-2 text-right border">₹ 200</td></tr>
+                            <tr><td class="p-2 border">Driver Batta / Special Allowance</td><td class="p-2 text-right border">${formatINR(batta)}</td><td class="p-2 border">-</td><td class="p-2 text-right border">-</td></tr>
+                        </tbody>
+                    </table>
+                    <div class="flex justify-between items-center font-bold text-sm bg-slate-50 p-3 rounded border">
+                        <span>Net Take Home Salary:</span>
+                        <span class="text-emerald-700 text-base">${formatINR(net - 200)}</span>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('payslipContent').innerHTML = html;
+            openModal('payslipModal');
+        }
+
+        function processPayroll() {
+            alert('July 2026 Payroll for Friendship Express Pvt Ltd successfully processed & posted to Accounting Ledger!');
+        }
+
+        function toggleInvoice(id) {
+            const inv = state.invoices.find(i => i.id === id);
+            if (inv) {
+                inv.status = inv.status === 'Paid' ? 'Unpaid' : 'Paid';
+                saveState();
+                renderInvoices();
+            }
+        }
+
+        function openSearchModal() { openModal('searchModal'); document.getElementById('globalSearchInput').focus(); }
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    </script>
+</body>
+</html>
